@@ -3,20 +3,20 @@
 
 ## Flight statuses
 
-Scheduled: This status indicates that the flight is still expected to leave at the originally planned departure time.
-Check-in: The check-in for the flight is open.
-Check-in Closed: The check-in for the flight is closed.
-Boarding: Passengers are currently being boarded onto the flight.
-Final Call: The last announcement for passengers to board.
-Gate Change: The departure gate for the flight has changed (this could technically happen at any time before departure).
-On Time: The flight is expected to depart or arrive at the originally scheduled time.
-Delayed: The flight’s departure or arrival has been postponed (this could happen before or after the "On Time" status, depending on circumstances).
-Departed: The flight has left the departure airport.
-In Flight: The flight is currently in the air.
-Diverted: The flight has been diverted to a different airport due to some kind of issue (e.g., weather conditions, mechanical problems, etc.).
-Landed: The flight has landed at the destination airport.
-Baggage Claim: Luggage from the flight is now available for pickup.
-Note: The Cancelled status could technically occur at any time, from just after the flight is scheduled to just before it's supposed to depart.
+* Scheduled: This status indicates that the flight is still expected to leave at the originally planned departure time.
+* Check-in: The check-in for the flight is open.
+* Check-in Closed: The check-in for the flight is closed.
+* Boarding: Passengers are currently being boarded onto the flight.
+* Final Call: The last announcement for passengers to board.
+* Gate Change: The departure gate for the flight has changed (this could technically happen at any time before departure).
+* On Time: The flight is expected to depart or arrive at the originally scheduled time.
+* Delayed: The flight’s departure or arrival has been postponed (this could happen before or after the "On Time" status, depending on circumstances).
+* Departed: The flight has left the departure airport.
+* In Flight: The flight is currently in the air.
+* Diverted: The flight has been diverted to a different airport due to some kind of issue (e.g., weather conditions, mechanical problems, etc.).
+* Landed: The flight has landed at the destination airport.
+* Baggage Claim: Luggage from the flight is now available for pickup.
+* Note: The Cancelled status could technically occur at any time, from just after the flight is scheduled to just before it's supposed to depart.
 
 ## Data
 
