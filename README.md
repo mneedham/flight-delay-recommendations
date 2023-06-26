@@ -20,7 +20,10 @@
 
 ## Data
 
+Data that we could use:
+
 ### About the person
+
 flight details (OLTP)
 return flight (OLTP)
 previous flights
@@ -30,6 +33,7 @@ loyalty points
 are you travelling inbound or outbound
 
 ### Other
+
 Alternative flights
 Alternative other transport
 Hotel availability
