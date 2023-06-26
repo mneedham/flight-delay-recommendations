@@ -22,7 +22,7 @@
 
 Data that we could use:
 
-### About the person
+### About the person
 
 flight details (OLTP)
 return flight (OLTP)
@@ -32,7 +32,7 @@ is anybody travelling with you e.g. any children?
 loyalty points
 are you travelling inbound or outbound
 
-### Other
+### Other
 
 Alternative flights
 Alternative other transport
