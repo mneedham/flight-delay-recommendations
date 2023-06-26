@@ -47,7 +47,7 @@ Airline policy on flight delays
 * Filter the delayed events with quix/rising wave. Create a prompt and call OpenAI. Get back a message. “Send” to the user via a pub/sub or RP topic? If all else fails, log the notification to the console!
 
 
-### v2
+### v2
 * Add in the company’s delay policy
 * Users previous flight history
 * Whether the booking was personal/business
