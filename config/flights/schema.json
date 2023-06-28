@@ -1,0 +1,48 @@
+{
+    "schemaName": "flight_statuses",
+    "primaryKeyColumns": ["flight_id"],
+    "dimensionFieldSpecs": [
+      {
+        "name": "message_type",
+        "dataType": "STRING"
+      },
+      {
+        "name": "flight_id",
+        "dataType": "STRING"
+      },
+      {
+        "name": "airline",
+        "dataType": "STRING"
+      },
+      {
+        "name": "departure_airport",
+        "dataType": "STRING"
+      },
+      {
+        "name": "arrival_airport",
+        "dataType": "STRING"
+      },
+      {
+        "name": "aircraft_type",
+        "dataType": "STRING"
+      },
+      {
+        "name": "available_seats",
+        "dataType": "INT"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "scheduled_departure_time",
+        "dataType": "TIMESTAMP",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "scheduled_arrival_time",
+        "dataType": "TIMESTAMP",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ]
+  }

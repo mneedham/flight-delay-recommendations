@@ -1,0 +1,105 @@
+version: '3.7'
+services:
+
+  zookeeper:
+    image: zookeeper:3.8.0
+    hostname: zookeeper
+    container_name: zookeeper-flights
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks: 
+      - flights
+
+  redpanda:
+    container_name: "redpanda"
+    image: docker.redpanda.com/vectorized/redpanda:v22.2.2
+    command:
+      - redpanda start
+      - --smp 1
+      - --overprovisioned
+      - --node-id 0
+      - --kafka-addr PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      - --advertise-kafka-addr PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092
+      - --pandaproxy-addr 0.0.0.0:8082
+      - --advertise-pandaproxy-addr localhost:8082
+    ports:
+      - 8081:8081
+      - 8082:8082
+      - 9092:9092
+      - 9644:9644
+      - 29092:29092
+    networks: 
+      - flights
+
+  console:
+    container_name: "redpanda-console"
+    image: docker.redpanda.com/vectorized/console:latest
+    entrypoint: /bin/sh
+    command: -c "echo \"$$CONSOLE_CONFIG_FILE\" > /tmp/config.yml; /app/console"
+    environment:
+      CONFIG_FILEPATH: /tmp/config.yml
+      CONSOLE_CONFIG_FILE: |
+        kafka:
+          brokers: ["redpanda:29092"]
+          schemaRegistry:
+            enabled: true
+            urls: ["http://redpanda:8081"]
+        redpanda:
+          adminApi:
+            enabled: true
+            urls: ["http://redpanda:9644"]
+        connect:
+          enabled: true
+          clusters:
+            - name: local-connect-cluster
+              url: http://connect:8083
+    ports:
+      - 8080:8080
+    depends_on:
+      - redpanda
+    networks: 
+      - flights
+
+  pinot-controller:
+    image: apachepinot/pinot:0.12.0-arm64
+    command: "StartController -zkAddress zookeeper-flights:2181 -dataDir /data"
+    container_name: "pinot-controller-flights"
+    volumes:
+      - ./config:/config
+      - ./data-realtime:/data
+      - ./input:/input
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    depends_on:
+      - zookeeper
+    networks: 
+      - flights
+
+  pinot-broker:
+    image: apachepinot/pinot:0.12.0-arm64
+    command: "StartBroker -zkAddress zookeeper-flights:2181"
+    restart: unless-stopped
+    container_name: "pinot-broker-flights"
+    ports:
+      - "8099:8099"
+    depends_on:
+      - pinot-controller
+    networks: 
+      - flights
+
+  pinot-server:
+    image: apachepinot/pinot:0.12.0-arm64
+    command: "StartServer -zkAddress zookeeper-flights:2181"
+    restart: unless-stopped
+    container_name: "pinot-server-flights"
+    depends_on:
+      - pinot-broker
+    networks: 
+      - flights
+networks:
+  flights:
+    name: flights

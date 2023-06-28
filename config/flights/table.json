@@ -1,0 +1,73 @@
+{
+    "tableName": "flight_statuses",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "scheduled_departure_time",
+      "schemaName": "flight_statuses",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "flight-statuses",
+        "stream.kafka.broker.list": "redpanda:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": 
+          "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": 
+          "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder",
+          "realtime.segment.flush.threshold.rows": "1000",
+          "realtime.segment.flush.threshold.time": "24h",
+          "realtime.segment.flush.segment.size": "100M"
+      }
+    },
+    "metadata": {},
+    "ingestionConfig": {
+      "filterConfig": {
+        "filterFunction": "strcmp(message_type, 'flight_schedule') <> 0"
+      },
+      "transformConfigs": [
+        {
+          "columnName": "flight_id",
+          "transformFunction": "JSONPATH(data, '$.flight_id')"
+        },
+        {
+          "columnName": "airline",
+          "transformFunction": "JSONPATH(data, '$.airline')"
+        },
+        {
+          "columnName": "departure_airport",
+          "transformFunction": "JSONPATH(data, '$.departure_airport.airport')"
+        },
+        
+        {
+          "columnName": "arrival_airport",
+          "transformFunction": "JSONPATH(data, '$.arrival_airport.airport')"
+        },
+        {
+          "columnName": "aircraft_type",
+          "transformFunction": "JSONPATH(data, '$.aircraft_type')"
+        },
+        {
+            "columnName": "available_seats",
+            "transformFunction": "JSONPATH(data, '$.available_seats')"
+        },
+        {
+            "columnName": "scheduled_departure_time",
+            "transformFunction": "JSONPATH(data, '$.scheduled_departure_time')"
+        },
+        {
+            "columnName": "scheduled_arrival_time",
+            "transformFunction": "JSONPATH(data, '$.scheduled_arrival_time')"
+        }
+      ]
+    },
+    "upsertConfig": {
+        "mode": "FULL"
+    },
+    "routing": {
+        "instanceSelectorType": "strictReplicaGroup"
+    }
+}

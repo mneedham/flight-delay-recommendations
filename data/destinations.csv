@@ -1,0 +1,185 @@
+Location,AirportCode,Weight
+Aberdeen,ABZ,3
+Abu Dhabi,AUH,7
+Accra,ACC,4
+Addis Ababa,ADD,6
+Algiers,ALG,5
+Amman,AMM,7
+Amsterdam,AMS,7
+Athens,ATH,7
+Atlanta,ATL,9
+Auckland,AKL,8
+Austin,AUS,7
+Bahrain,BAH,6
+Baltimore,BWI,5
+Bandar Seri Begawan,BWN,3
+Bangalore,BLR,6
+Bangkok,BKK,9
+Barbados,BGI,5
+Barcelona,BCN,7
+Basel,BSL,5
+Beijing,PEK,9
+Beirut,BEY,6
+Belfast,BHD,3
+Belgrade,BEG,5
+Berlin,TXL,4
+Bodrum,BJV,4
+Bogota,BOG,7
+Bologna,BLQ,4
+Boston,BOS,8
+Brussels,BRU,5
+Bucharest,OTP,3
+Budapest,BUD,6
+Buenos Aires,EZE,8
+Cairo,CAI,7
+Calgary,YYC,7
+Cape Town,CPT,7
+Casablanca,CMN,4
+Chania,CHQ,3
+Charleston,CHS,3
+Charlotte,CLT,7
+Chengdu,CTU,6
+Chicago,ORD,9
+Colombo,CMB,5
+Copenhagen,CPH,4
+Corfu,CFU,4
+Cork,ORK,4
+Dallas Fortworth,DFW,9
+Dammam,DMM,4
+Delhi,DEL,8
+Denpasar Bali,DPS,7
+Denver,DEN,5
+Detroit,DTW,7
+Doha,DOH,8
+Dubai,DXB,10
+Dublin,DUB,8
+Durban,DUR,5
+Dusseldorf,DUS,6
+Edinburgh,EDI,6
+Faro,FAO,3
+Frankfurt,FRA,9
+Geneva,GVA,6
+Gibraltar,GIB,3
+Glasgow,GLA,6
+Gothenburg,GOT,4
+Gran Canaria,LPA,4
+Grand Cayman Island,GCM,4
+Guangzhou,CAN,8
+Guernsey,GCI,3
+Hamburg,HAM,4
+Hanoi,HAN,6
+Hanover,HAJ,5
+Havana,HAV,7
+Helsinki,HEL,7
+Ho Chi Minh City,SGN,4
+Hong Kong,HKG,9
+Houston,IAH,8
+Hyderabad,HYD,6
+Ibiza,IBZ,5
+Innsbruck,INN,3
+Inverness,INV,3
+Islamabad,ISB,4
+Isle Of Man,IOM,2
+Istanbul,IST,8
+Jeddah,JED,7
+Johannesburg,JNB,8
+Kalamata,KLX,3
+Kefalonia,EFL,3
+Krakow,KRK,4
+Kuala Lumpur,KUL,8
+Kuwait,KWI,5
+Larnaca,LCA,4
+Las Vegas,LAS,9
+Leeds-Bradford,LBA,3
+Lisbon,LIS,7
+Los Angeles,LAX,9
+Luxembourg,LUX,4
+Lyons,LYS,4
+Madras-Chennai,MAA,6
+Madrid,MAD,7
+Mahe Island,SEZ,5
+Majorca,PMI,4
+Malaga,AGP,6
+Malta,MLA,4
+Manchester,MAN,6
+Marrakech,RAK,7
+Marseille,MRS,4
+Mauritius,MRU,5
+Melbourne,MEL,8
+Mexico City,MEX,8
+Miami,MIA,8
+Milan,LIN,3
+Milan,MXP,8
+Minneapolis-St Paul,MSP,8
+Montreal,YUL,7
+Moscow,DME,4
+Moscow,SVO,7
+Mumbai,BOM,7
+Munich,MUC,8
+Muscat,MCT,7
+Mykonos,JMK,3
+Nairobi,NBO,7
+Nashville,BNA,5
+Nassau,NAS,6
+New Orleans,MSY,6
+New York,EWR,8
+New York,JFK,9
+Newcastle,NCL,3
+Newquay,NQY,2
+Nice,NCE,6
+Osaka,KIX,8
+Oslo,OSL,6
+Ottawa,YOW,5
+Paris,CDG,9
+Perth,PER,6
+Philadelphia,PHL,6
+Phoenix,PHX,7
+Pisa,PSA,4
+Pittsburgh,PIT,5
+Portland,PDX,4
+Prague,PRG,6
+Preveza-Lefkas,PVK,3
+Pula,PUY,2
+Qingdao,TAO,5
+Rabat,RBA,4
+Raleigh-Durham,RDU,5
+Reykjavik,KEF,5
+Rio De Janeiro,GIG,8
+Riyadh,RUH,7
+Rome,FCO,7
+Salt Lake City,SLC,6
+Salzburg,SZG,4
+San Diego,SAN,7
+San Francisco,SFO,9
+San Jose,SJC,5
+Santiago,SCL,6
+Santorini,JTR,4
+Sao Paulo,GRU,8
+Seattle,SEA,8
+Seoul,ICN,9
+Shanghai,PVG,8
+Shannon,SNN,3
+Singapore,SIN,10
+Sofia,SOF,5
+Split,SPU,5
+Stockholm,ARN,5
+Stuttgart,STR,6
+Sydney,SYD,9
+Taipei,TPE,6
+Tashkent,TAS,4
+Tel Aviv,TLV,8
+Tenerife,TFS,4
+Tokyo,HND,7
+Tokyo,NRT,8
+Toronto,YYZ,8
+Toulouse,TLS,3
+Tunis,TUN,3
+Valencia,VLC,3
+Vancouver,YVR,7
+Venice,VCE,6
+Vienna,VIE,7
+Warsaw,WAW,6
+Washington,IAD,8
+Zagreb,ZAG,4
+Zakinthos,ZTH,3
+Zurich,ZRH,7
