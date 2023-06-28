@@ -1,4 +1,3 @@
-from confluent_kafka import Producer
 import json
 from datetime import datetime, timedelta
 from pinotdb import connect
@@ -7,41 +6,34 @@ from langchain.llms import HuggingFacePipeline
 from langchain.chains.question_answering import load_qa_chain
 from llama_index.bridge.langchain import Document as LCDocument
 from langchain.llms import OpenAI
+from langchain.prompts import PromptTemplate
+import csv
+import random
 
-flight_id = "LI1022"
-
-# producer = Producer({'bootstrap.servers': 'localhost:9092'})
-
-# def acked(err, msg):
-#     if err is not None:
-#         print("Failed to deliver message: {0}: {1}"
-#               .format(msg.value(), err.str()))
-
-# def json_serializer(obj):
-#     if isinstance(obj, datetime):  # This refers to datetime.datetime because of your import
-#         return obj.strftime("%Y-%m-%d %T%Z")
-#     raise TypeError("Type %s not serializable" % type(obj))
-
-# def publish_flight(producer, event):    
-#     try:
-#         payload = json.dumps(event, default=json_serializer, ensure_ascii=False).encode('utf-8')
-#         producer.produce(topic='flight-statuses', key=str(event['data']['flight_id']), value=payload, callback=acked)
-#     except TypeError:
-#         print(f"Failed to parse: {event}")
+with open('data/customers.csv', 'r') as customers_file:
+    reader = csv.DictReader(customers_file)
+    customers = {row["CustomerId"]: row for row in reader}
 
 conn = connect(host='localhost', port=8099, path='/query/sql', scheme='http')
 
 DatabaseReader = download_loader('DatabaseReader')
-
 reader = DatabaseReader(
     uri="pinot+http://localhost:8099/query/sql?controller=http://localhost:9000"
 )
 
+flight_id = "LI1022"
 flight_details = {
     "data": {
         "flight_id": flight_id
     }
 }
+
+
+random_customer_id = random.choice(list(customers.keys()))
+random_customer = customers[random_customer_id]
+
+keys_to_remove = ['Location', 'Email', 'Passport Number']
+relevant_customer_data = random_customer = {key: random_customer[key] for key in random_customer if key not in keys_to_remove}
 
 curs = conn.cursor()
 curs.execute("""
@@ -57,28 +49,52 @@ if flight:
     print(destination, departure_time)
 
     query = f"""
-        SELECT 'Next Available Flight' as description, scheduled_departure_time, arrival_airport
+        SELECT 'Next Available Flight' as description, scheduled_departure_time
         FROM flight_statuses
         WHERE arrival_airport = '{destination}'
         AND scheduled_departure_time > {int(departure_time.timestamp() * 1000)}
         AND flight_id <> '{flight_id}'
         ORDER BY scheduled_departure_time
-        LIMIT 10
+        LIMIT 1
     """
 
     documents = reader.load_langchain_documents(query=query)
-    documents += [LCDocument(page_content=f"Cancelled flight || Flight Number: {flight_id}, Delay Time: 5 hours")]
+    documents += [
+        LCDocument(page_content=f"""Delayed flight:
+        Flight Number: {flight_id}, Destination: {destination} 
+        Initial flight time: {departure_time}
+        New flight time: 2023-06-28 08:55:07.764000"""),
+        LCDocument(page_content="""Compensation rules: 
+        Compensation between £200 and £500 for a 3+ hour delay
+        Food/Drink vouchers for a 1+ hour delay
+        Hotel if flight is delayed until the next day
+        """),
+        LCDocument(page_content="Frequent flyer statuses are: Bronze', 'Silver', 'Gold', 'Platinum"),
+        LCDocument(page_content=f"Customer details: {', '.join(f'{key}: {value}' for key, value in relevant_customer_data.items())}")
+    ]
 
-    llm = OpenAI(temperature=0)
+    for d in documents:
+        print(d)
 
-    qa_chain = load_qa_chain(llm)
-    question="""
-    The attached flight has been cancelled by a number of hours.
-    The next available flights are included.
-    Please generate a message for the passenger detailing these options and advising on the best course of action. 
-    The message doesn't need to be super serious, but be apologetic because they are going to be annoyed.  
-    Also indicate if they will receive any compensation
-    Keep the message to say 1 or 2 paragraphs and don't list every option. Suggest which one you think is best.
-    """
-    answer = qa_chain.run(input_documents=documents, question=question)
-    print(answer)
+    print(" ".join(d.page_content for d in documents))
+
+    # llm = OpenAI(temperature=0)
+
+    # qa_chain = load_qa_chain(llm)
+    # question="""
+    # {context}
+    # The customer's flight has been delayed.
+    # The next available flight and compensation rules are described above.
+
+    # Please generate a message for the passenger detailing these options and advising on the best course of action. 
+    # The message doesn't need to be super serious, but be apologetic because they are going to be annoyed.  
+    # Also indicate if they will receive any compensation and suggest what it is, don't list all the options
+    # Keep the message to say 1 or 2 paragraphs and don't list every option.
+    # Suggest which one you think is best and only use the data provided, don't make stuff up.
+    # """
+    # prompt = PromptTemplate(
+    #     template=question, input_variables=["context"]
+    # )
+
+    # answer = qa_chain.run(input_documents=documents, question=question)
+    # print(answer)
