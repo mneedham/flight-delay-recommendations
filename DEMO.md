@@ -50,3 +50,46 @@ group by arrival_airport
 order by count(*) DESC
 limit 10
 ```
+
+Customer actions:
+
+```bash
+docker run \
+  -v $PWD/config:/config \
+  --network flights \
+  apachepinot/pinot:0.12.0-arm64 \
+  AddTable \
+  -schemaFile /config/customer-actions/schema.json \
+  -tableConfigFile /config/customer-actions/table.json \
+  -controllerHost pinot-controller-flights \
+  -exec
+```
+
+Who's checked in?
+
+```sql
+select * 
+from customer_actions 
+where message_type = 'check_in'
+limit 10
+```
+
+Statuses for a booking reference
+
+```sql
+select * 
+from customer_actions 
+where booking_reference = 'JU8893-39d38b7a-c7b3-4087-90de-aaac647a3fb7'
+limit 10
+option(skipUpsert=true)
+```
+
+How many people have checkedin for a flight?
+
+```sql
+select message_type, count(*) 
+from customer_actions
+where flight_id = 'JU8893'
+group by message_type
+limit 10
+```

@@ -1,0 +1,59 @@
+{
+    "tableName": "customer_actions",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "ts",
+      "schemaName": "customer_actions",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "nullHandlingEnabled": true,
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "customer-actions",
+        "stream.kafka.broker.list": "redpanda:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": 
+          "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": 
+          "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder",
+          "realtime.segment.flush.threshold.rows": "0",
+          "realtime.segment.flush.threshold.time": "24h",
+          "realtime.segment.flush.segment.size": "100M"
+      }
+    },
+    "metadata": {},
+    "ingestionConfig": {
+      "transformConfigs": [
+        {
+          "columnName": "flight_id",
+          "transformFunction": "JSONPATH(data, '$.flight_id')"
+        },
+        {
+          "columnName": "booking_reference",
+          "transformFunction": "JSONPATH(data, '$.booking_reference')"
+        },
+        {
+          "columnName": "passenger_id",
+          "transformFunction": "JSONPATH(data, '$.passenger_id')"
+        },
+        {
+            "columnName": "ts",
+            "transformFunction": "JSONPATH(data, '$.ts')"
+        }
+      ]
+    },
+    "upsertConfig": {
+        "mode": "PARTIAL",
+        "partialUpsertStrategies":{
+          "message_type": "OVERWRITE",
+          "flight_id": "IGNORE",
+          "passenger_id": "IGNORE"
+        }
+    },
+    "routing": {
+        "instanceSelectorType": "strictReplicaGroup"
+    }
+}

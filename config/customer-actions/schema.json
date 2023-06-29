@@ -1,0 +1,30 @@
+{
+    "schemaName": "customer_actions",
+    "primaryKeyColumns": ["booking_reference"],
+    "dimensionFieldSpecs": [
+      {
+        "name": "message_type",
+        "dataType": "STRING"
+      },
+      {
+        "name": "flight_id",
+        "dataType": "STRING"
+      },
+      {
+        "name": "booking_reference",
+        "dataType": "STRING"
+      },
+      {
+        "name": "passenger_id",
+        "dataType": "STRING"
+      }      
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "ts",
+        "dataType": "TIMESTAMP",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ]
+}
