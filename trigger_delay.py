@@ -22,8 +22,10 @@ reader = DatabaseReader(
     uri="pinot+http://localhost:8099/query/sql?controller=http://localhost:9000"
 )
 
-@click.option("--flight_id", help="Flight ID")
-def delay_triggered(flight_id):
+@click.command()
+@click.option("--flight-id", help="Flight ID", required=True)
+@click.option("--generate-notifications", default=False, help="Generate notifications with Open AI?")
+def delay_triggered(flight_id, generate_notifications):
 
 
     random_customer_id = random.choice(list(customers.keys()))
@@ -70,32 +72,28 @@ def delay_triggered(flight_id):
             LCDocument(page_content=f"Customer details: {', '.join(f'{key}: {value}' for key, value in relevant_customer_data.items())}")
         ]
 
-        for d in documents:
-            print(d)
+        if generate_notifications:
+            llm = OpenAI(temperature=0)
 
-        print(" ".join(d.page_content for d in documents))
+            qa_chain = load_qa_chain(llm)
+            question="""
+            {context}
+            The customer's flight has been delayed.
+            The next available flight and compensation rules are described above.
 
-        llm = OpenAI(temperature=0)
+            Please generate a message for the passenger detailing these options and advising on the best course of action. 
+            The message doesn't need to be super serious, but be apologetic because they are going to be annoyed.  
+            Also indicate if they will receive any compensation and say the exact £ amount they will receive.
+            Take customer details into account when replying and remember that Platinum status is best, then Gold, Silver, Bronze.
+            Keep the message to say 1 or 2 paragraphs and don't list every option.
+            Suggest which one you think is best and only use the data provided, don't make stuff up.
+            """
+            prompt = PromptTemplate(
+                template=question, input_variables=["context"]
+            )
 
-        qa_chain = load_qa_chain(llm)
-        question="""
-        {context}
-        The customer's flight has been delayed.
-        The next available flight and compensation rules are described above.
-
-        Please generate a message for the passenger detailing these options and advising on the best course of action. 
-        The message doesn't need to be super serious, but be apologetic because they are going to be annoyed.  
-        Also indicate if they will receive any compensation and say the exact £ amount they will receive.
-        Take customer details into account when replying and remember that Platinum status is best, then Gold, Silver, Bronze.
-        Keep the message to say 1 or 2 paragraphs and don't list every option.
-        Suggest which one you think is best and only use the data provided, don't make stuff up.
-        """
-        prompt = PromptTemplate(
-            template=question, input_variables=["context"]
-        )
-
-        answer = qa_chain.run(input_documents=documents, question=question)
-        print(answer)
+            answer = qa_chain.run(input_documents=documents, question=question)
+            print(answer)
 
 if __name__ == "__main__":
     delay_triggered()
