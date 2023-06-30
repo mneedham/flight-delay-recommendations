@@ -64,23 +64,26 @@ services:
       - flights
 
   pinot-controller:
-    image: apachepinot/pinot:0.12.0-arm64
+    image: apachepinot/pinot:0.13.0-SNAPSHOT-fc26d6d897-20230629-17-amazoncorretto
     command: "StartController -zkAddress zookeeper-flights:2181 -dataDir /data"
     container_name: "pinot-controller-flights"
     volumes:
       - ./config:/config
       - ./data-realtime:/data
-      - ./input:/input
+      - ./data:/input
     restart: unless-stopped
     ports:
       - "9000:9000"
+      - "5005:5005"
+    environment:
+      JAVA_OPTS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
     depends_on:
       - zookeeper
     networks: 
       - flights
 
   pinot-broker:
-    image: apachepinot/pinot:0.12.0-arm64
+    image: apachepinot/pinot:0.13.0-SNAPSHOT-fc26d6d897-20230629-17-amazoncorretto
     command: "StartBroker -zkAddress zookeeper-flights:2181"
     restart: unless-stopped
     container_name: "pinot-broker-flights"
@@ -92,10 +95,22 @@ services:
       - flights
 
   pinot-server:
-    image: apachepinot/pinot:0.12.0-arm64
+    image: apachepinot/pinot:0.13.0-SNAPSHOT-fc26d6d897-20230629-17-amazoncorretto
     command: "StartServer -zkAddress zookeeper-flights:2181"
     restart: unless-stopped
     container_name: "pinot-server-flights"
+    depends_on:
+      - pinot-broker
+    networks: 
+      - flights
+
+  pinot-minion:
+    image: apachepinot/pinot:0.13.0-SNAPSHOT-fc26d6d897-20230629-17-amazoncorretto
+    command: "StartMinion -zkAddress zookeeper-flights:2181"
+    restart: unless-stopped
+    container_name: "pinot-minion-flights"
+    volumes:
+      - ./data:/input
     depends_on:
       - pinot-broker
     networks: 

@@ -10,10 +10,7 @@ from langchain.prompts import PromptTemplate
 import csv
 import random
 import click
-
-with open('data/customers.csv', 'r') as customers_file:
-    reader = csv.DictReader(customers_file)
-    customers = {row["CustomerId"]: row for row in reader}
+import pandas as pd
 
 conn = connect(host='localhost', port=8099, path='/query/sql', scheme='http')
 
@@ -26,14 +23,6 @@ reader = DatabaseReader(
 @click.option("--flight-id", help="Flight ID", required=True)
 @click.option("--generate-notifications", default=False, help="Generate notifications with Open AI?")
 def delay_triggered(flight_id, generate_notifications):
-
-
-    random_customer_id = random.choice(list(customers.keys()))
-    random_customer = customers[random_customer_id]
-
-    keys_to_remove = ['Location', 'Email', 'Passport Number']
-    relevant_customer_data = random_customer = {key: random_customer[key] for key in random_customer if key not in keys_to_remove}
-
     curs = conn.cursor()
     curs.execute("""
         SELECT scheduled_departure_time, arrival_airport
@@ -68,9 +57,29 @@ def delay_triggered(flight_id, generate_notifications):
             Food/Drink vouchers for a 1+ hour delay
             Hotel if flight is delayed until the next day
             """),
-            LCDocument(page_content="Frequent flyer statuses are: Bronze', 'Silver', 'Gold', 'Platinum"),
-            LCDocument(page_content=f"Customer details: {', '.join(f'{key}: {value}' for key, value in relevant_customer_data.items())}")
+            LCDocument(page_content="Frequent flyer statuses are: Bronze', 'Silver', 'Gold', 'Platinum")            
         ]
+
+        print("flight_id", flight_id)
+        curs.execute(f"""
+        select arrival_airport, customer_actions.flight_id, passenger_id, ToDateTime(ts, 'YYYY-MM-dd HH:mm') AS ts
+        from customer_actions 
+        JOIN flight_statuses ON flight_statuses."flight_id" = customer_actions."flight_id"        
+        WHERE flight_statuses.flight_id = '{flight_id}'
+        ORDER BY ts
+        LIMIT 500
+        """, {"flightId": flight_id}, queryOptions="useMultistageEngine=true")
+        customers = pd.DataFrame(curs, columns=[item[0] for item in curs.description])
+        print(customers)
+
+
+        # Lookup customers
+
+            # random_customer_id = random.choice(list(customers.keys()))
+            # random_customer = customers[random_customer_id]
+
+            # keys_to_remove = ['Location', 'Email', 'Passport Number']
+            # relevant_customer_data = random_customer = {key: random_customer[key] for key in random_customer if key not in keys_to_remove}
 
         if generate_notifications:
             llm = OpenAI(temperature=0)

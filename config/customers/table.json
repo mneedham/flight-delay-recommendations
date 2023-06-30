@@ -1,0 +1,41 @@
+{
+    "tableName": "customers",
+    "tableType": "OFFLINE",
+    "segmentsConfig": {
+      "schemaName": "customers",
+      "replication": 1
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      
+    },
+    "ingestionConfig":{
+        "transformConfigs": [
+            {
+                "columnName": "FrequentFlyerStatus",
+                "transformFunction": "\"Frequent Flyer Status\""
+            },
+            {
+                "columnName": "PassportNumber",
+                "transformFunction": "\"Passport Number\""
+            },
+            {
+                "columnName": "NumberOfFlights",
+                "transformFunction": "\"Number of Flights\""
+            },
+            {
+                "columnName": "LoyaltyScore",
+                "transformFunction": "\"Loyalty Score\""
+            },
+            {
+                "columnName": "PastDelays",
+                "transformFunction": "\"Past Delays\""
+            }
+
+        ]
+    },
+    "task": {
+        "taskTypeConfigsMap": { "SegmentGenerationAndPushTask": {} }
+      },
+    "metadata": {}
+}

@@ -65,6 +65,28 @@ docker run \
   -exec
 ```
 
+Customers:
+
+```bash
+docker run \
+  -v $PWD/config:/config \
+  --network flights \
+  apachepinot/pinot:0.12.0-arm64 \
+  AddTable \
+  -schemaFile /config/customers/schema.json \
+  -tableConfigFile /config/customers/table.json \
+  -controllerHost pinot-controller-flights \
+  -exec
+```
+
+```sql
+SET taskName = 'events-task7';
+SET input.fs.className = 'org.apache.pinot.spi.filesystem.LocalPinotFS';
+SET includeFileNamePattern='glob:**/*customers.csv';
+INSERT INTO customers
+FROM FILE 'file:///input/';
+```
+
 Who's checked in?
 
 ```sql

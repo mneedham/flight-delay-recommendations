@@ -1,0 +1,50 @@
+{
+    "schemaName": "customers",
+    "dimensionFieldSpecs": [
+      {
+        "name": "CustomerId",
+        "dataType": "STRING"
+      },
+      {
+        "name": "Name",
+        "dataType": "STRING"
+      },
+      {
+        "name": "Age",
+        "dataType": "INT"
+      },
+      {
+        "name": "Gender",
+        "dataType": "STRING"
+      },
+      {
+        "name": "Location",
+        "dataType": "STRING"
+      },
+      {
+        "name": "Email",
+        "dataType": "STRING"
+      },
+      {
+        "name": "FrequentFlyerStatus",
+        "dataType": "STRING"
+      },
+      {
+        "name": "PassportNumber",
+        "dataType": "LONG"
+      },
+      {
+        "name": "NumberOfFlights",
+        "dataType": "INT"
+      },
+      {
+        "name": "LoyaltyScore",
+        "dataType": "FLOAT"
+      },
+      {
+        "name": "PastDelays",
+        "dataType": "INT"
+      }
+    ]
+  }
+  
