@@ -12,6 +12,8 @@ import random
 import click
 import pandas as pd
 
+from confluent_kafka import Producer
+
 conn = connect(host='localhost', port=8099, path='/query/sql', scheme='http')
 
 DatabaseReader = download_loader('DatabaseReader')
@@ -19,10 +21,29 @@ reader = DatabaseReader(
     uri="pinot+http://localhost:8099/query/sql?controller=http://localhost:9000"
 )
 
+def acked(err, msg):
+    if err is not None:
+        print("Failed to deliver message: {0}: {1}"
+              .format(msg.value(), err.str()))
+
+def json_serializer(obj):
+    if isinstance(obj, datetime):  # This refers to datetime.datetime because of your import
+        return obj.strftime("%Y-%m-%d %T%Z")
+    raise TypeError("Type %s not serializable" % type(obj))
+
+def publish_event(producer, topic, event, key):    
+    try:
+        payload = json.dumps(event, default=json_serializer, ensure_ascii=False).encode('utf-8')
+        producer.produce(topic=topic, key=str(key), value=payload, callback=acked)
+    except TypeError:
+        print(f"Failed to parse: {event}")
+
+
 @click.command()
 @click.option("--flight-id", help="Flight ID", required=True)
+@click.option("--delay-time", default=60, help="Delay in minutes")
 @click.option("--generate-notifications", default=False, help="Generate notifications with Open AI?")
-def delay_triggered(flight_id, generate_notifications):
+def delay_triggered(flight_id, delay_time, generate_notifications):
     curs = conn.cursor()
     curs.execute("""
         SELECT scheduled_departure_time, arrival_airport
@@ -35,6 +56,20 @@ def delay_triggered(flight_id, generate_notifications):
     if flight:
         departure_time, destination = flight
         print(destination, departure_time)
+        producer = Producer({'bootstrap.servers': 'localhost:9092'})
+        event = {
+            "message_type": "flight_delay",
+            "data": {
+                "flight_id": flight_id,
+                "scheduled_departure_time": int(departure_time.timestamp() * 1000),
+                "new_departure_time": int(departure_time.timestamp() * 1000) + (delay_time * 60 * 1000)
+            }
+        }
+        print(event)
+        publish_event(producer, "flight-statuses", event, key=event["data"]["flight_id"])
+        producer.flush()
+
+
 
         query = f"""
             SELECT 'Next Available Flight' as description, scheduled_departure_time
