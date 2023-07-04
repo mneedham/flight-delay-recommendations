@@ -31,3 +31,7 @@ topic_consumer.on_stream_received = on_stream_received_handler
 topic_consumer.subscribe()
 
 qx.App.run()
+
+
+# SSE server around the topic
+# Make a web page to act as the client

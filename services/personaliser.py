@@ -16,10 +16,10 @@ def on_event_data_received_handler(stream: StreamConsumer, data: EventData):
     with data:
         payload = json.loads(data.value)
         
+        #take messages
+        # pass the context to LLM
         # generate personalised notification for each customer  (3-5 seconds per customer)
-
-        
-        # send out the notifications                            (asynchronous)
+        # Publish the message to dispatches
 
 def on_stream_received_handler(stream_received: StreamConsumer):
     stream_received.events.on_data_received = on_event_data_received_handler

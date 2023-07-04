@@ -18,10 +18,7 @@ def on_event_data_received_handler(stream: StreamConsumer, data: EventData):
 
         if payload["message_type"] == "flight_delay":
             # find all the customers affected                       (SQL query, less than a second)
-            # create an event per customer on another topic (customer_id, flight_id)
-            # generate personalised notification for each customer  (3-5 seconds per customer)
-            # send out the notifications                            (asynchronous)
-
+            # publish flight details + customer details to personaliser's topic
             print(f"Delay event: {payload}")
             # do some work that might take a few seconds
             time.sleep(5)

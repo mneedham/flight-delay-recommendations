@@ -89,6 +89,9 @@ services:
     container_name: "pinot-broker-flights"
     ports:
       - "8099:8099"
+      - "5006:5005"
+    environment:
+      JAVA_OPTS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
     depends_on:
       - pinot-controller
     networks: 
