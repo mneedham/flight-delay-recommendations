@@ -18,15 +18,17 @@ topic_producer = client.get_topic_producer(topic = "massaged-delays")
 delays_stream = topic_producer.create_stream()
 
 find_customers_query="""
-select arrival_airport, customer_actions.flight_id, 
-        passenger_id, Name AS passenger, 
-        ToDateTime(ts, 'YYYY-MM-dd HH:mm') AS lastStatusTimestamp, 
-        customer_actions.message_type AS lastStatus, 
-        customers.Email,
-        customers.FrequentFlyerStatus,
-        customers.LoyaltyScore,
-        customers.NumberOfFlights,
-        customers.PastDelays
+select arrival_airport, 
+       ToDateTime(scheduled_departure_time, 'YYYY-MM-dd HH:mm') AS departure_time, 
+       customer_actions.flight_id, 
+       passenger_id, Name AS passenger, 
+       ToDateTime(ts, 'YYYY-MM-dd HH:mm') AS lastStatusTimestamp, 
+       customer_actions.message_type AS lastStatus, 
+       customers.Email,
+       customers.FrequentFlyerStatus,
+       customers.LoyaltyScore,
+       customers.NumberOfFlights,
+       customers.PastDelays
 from customer_actions 
 JOIN flight_statuses ON flight_statuses."flight_id" = customer_actions."flight_id"
 JOIN customers ON customers.CustomerId = customer_actions.passenger_id
@@ -40,7 +42,7 @@ def on_event_data_received_handler(stream: StreamConsumer, data: EventData):
         payload = json.loads(data.value)        
 
         if payload["message_type"] == "flight_delay":
-            with (producer := client.get_raw_topic_producer("massaged-delays")):  
+            with (producer := client.get_raw_topic_producer("massaged-delays")):
                 # find all the customers affected 
                 flight_id = payload["data"]["flight_id"]
                 curs = conn.cursor()

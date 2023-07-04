@@ -6,7 +6,7 @@ import json
 client = qx.KafkaStreamingClient('127.0.0.1:9092')
 
 topic_consumer = client.get_topic_consumer(
-    topic="notification",
+    topic="notifications",
     auto_offset_reset=qx.AutoOffsetReset.Earliest,
     # consumer_group="flight-delay-notifications"
 )
@@ -16,10 +16,9 @@ def on_event_data_received_handler(stream: StreamConsumer, data: EventData):
     with data:
         payload = json.loads(data.value)
         
-        # generate personalised notification for each customer  (3-5 seconds per customer)
-
-        
+    
         # send out the notifications                            (asynchronous)
+        print(payload)
 
 def on_stream_received_handler(stream_received: StreamConsumer):
     stream_received.events.on_data_received = on_event_data_received_handler
