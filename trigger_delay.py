@@ -62,9 +62,10 @@ def delay_triggered(flight_id, generate_notifications):
 
         print("flight_id", flight_id)
         curs.execute(f"""
-        select arrival_airport, customer_actions.flight_id, passenger_id, ToDateTime(ts, 'YYYY-MM-dd HH:mm') AS ts
+        select arrival_airport, customer_actions.flight_id, passenger_id, Name, ToDateTime(ts, 'YYYY-MM-dd HH:mm') AS ts, customer_actions.message_type AS status
         from customer_actions 
-        JOIN flight_statuses ON flight_statuses."flight_id" = customer_actions."flight_id"        
+        JOIN flight_statuses ON flight_statuses."flight_id" = customer_actions."flight_id"
+        JOIN customers ON customers.CustomerId = customer_actions.passenger_id
         WHERE flight_statuses.flight_id = '{flight_id}'
         ORDER BY ts
         LIMIT 500
