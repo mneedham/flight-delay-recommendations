@@ -2,7 +2,10 @@ import quixstreams as qx
 from quixstreams import StreamConsumer, EventData
 import time
 import json
+from pinotdb import connect
+import pandas as pd
 
+conn = connect(host='localhost', port=8099, path='/query/sql', scheme='http')
 client = qx.KafkaStreamingClient('127.0.0.1:9092')
 
 topic_consumer = client.get_topic_consumer(
@@ -11,18 +14,45 @@ topic_consumer = client.get_topic_consumer(
     # consumer_group="flight-delay-notifications"
 )
 
+topic_producer = client.get_topic_producer(topic = "massaged-delays")
+delays_stream = topic_producer.create_stream()
+
+find_customers_query="""
+select arrival_airport, customer_actions.flight_id, 
+        passenger_id, Name AS passenger, 
+        ToDateTime(ts, 'YYYY-MM-dd HH:mm') AS lastStatusTimestamp, 
+        customer_actions.message_type AS lastStatus, 
+        customers.Email,
+        customers.FrequentFlyerStatus,
+        customers.LoyaltyScore,
+        customers.NumberOfFlights,
+        customers.PastDelays
+from customer_actions 
+JOIN flight_statuses ON flight_statuses."flight_id" = customer_actions."flight_id"
+JOIN customers ON customers.CustomerId = customer_actions.passenger_id
+WHERE flight_statuses.flight_id = (%(flightId)s)
+ORDER BY ts
+LIMIT 500
+"""
 
 def on_event_data_received_handler(stream: StreamConsumer, data: EventData):
     with data:
-        payload = json.loads(data.value)
+        payload = json.loads(data.value)        
 
         if payload["message_type"] == "flight_delay":
-            # find all the customers affected                       (SQL query, less than a second)
-            # publish flight details + customer details to personaliser's topic
-            print(f"Delay event: {payload}")
-            # do some work that might take a few seconds
-            time.sleep(5)
+            with (producer := client.get_raw_topic_producer("massaged-delays")):  
+                # find all the customers affected 
+                flight_id = payload["data"]["flight_id"]
+                curs = conn.cursor()
+                curs.execute(find_customers_query, {"flightId": flight_id}, queryOptions="useMultistageEngine=true")
+                customers = pd.DataFrame(curs, columns=[item[0] for item in curs.description])
+                curs.close()
+                for index, customer in customers.iterrows():
+                    customer_message = customer.to_dict()
 
+                    message = qx.RawMessage(json.dumps(customer_message, indent=2).encode('utf-8'))
+                    message.key = customer_message["passenger_id"].encode('utf-8')
+                    producer.publish(message)
 
 def on_stream_received_handler(stream_received: StreamConsumer):
     stream_received.events.on_data_received = on_event_data_received_handler

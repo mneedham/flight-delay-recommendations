@@ -15,8 +15,9 @@ topic_consumer = client.get_topic_consumer(
 def on_event_data_received_handler(stream: StreamConsumer, data: EventData):
     with data:
         payload = json.loads(data.value)
+        print(payload)
         
-        #take messages
+        # take messages
         # pass the context to LLM
         # generate personalised notification for each customer  (3-5 seconds per customer)
         # Publish the message to dispatches
