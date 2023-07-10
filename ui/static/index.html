@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Personalized Notifications</title>
+
+  <link rel="stylesheet" type="text/css"
+        href="https://cdnjs.cloudflare.com/ajax/libs/patternfly/3.24.0/css/patternfly.min.css">
+  <link rel="stylesheet" type="text/css"
+        href="https://cdnjs.cloudflare.com/ajax/libs/patternfly/3.24.0/css/patternfly-additions.min.css">
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <div class="card-body">
+      <h2 class="card-title">Personalized Notifications</h2>
+      <div class="pf-c-hint">
+        <div class="pf-c-hint__body">
+          Hello John Doe,
+
+          We are sorry to inform that something has fucked up your flight..
+        </div>
+      </div>
+      <div id="notification"></div>
+    </div>
+  </div>
+</div>
+</body>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    var source = new EventSource("/notifications");
+    source.onmessage = (event) => {
+    //   var message = JSON.parse(event.data);
+      $("#notification").html("<p>" + event.data + "</p>");
+    };
+</script>
+</html>
