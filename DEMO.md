@@ -27,7 +27,27 @@ Run data generator:
 python datagen.py
 ```
 
+Check data in Redpanda
+
+Go to http://localhost:8080 or query from the command line:
+
+```bash
+rpk topic consume flight-statuses --brokers localhost:9092 | 
+jq -Cc '.value | fromjson' | 
+head -n5
+```
+
+```bash
+rpk topic consume customer-actions --brokers localhost:9092 | 
+jq -Cc '.value | fromjson' | 
+head -n5
+
 Create Pinot table:
+
+```bash
+pygmentize -O style=github-dark config/flights/schema.json | less
+pygmentize -O style=github-dark config/flights/table.json | less
+```
 
 ```bash
 docker run \
@@ -40,6 +60,8 @@ docker run \
   -controllerHost pinot-controller-flights \
   -exec
 ```
+
+Go to http://localhost:9000
 
 Querying flight statuses:
 
@@ -54,6 +76,11 @@ limit 10
 Customer actions:
 
 ```bash
+pygmentize -O style=github-dark config/customer-actions/schema.json | less
+pygmentize -O style=github-dark config/customer-actions/table.json | less
+```
+
+```bash
 docker run \
   -v $PWD/config:/config \
   --network flights \
@@ -66,6 +93,11 @@ docker run \
 ```
 
 Customers:
+
+```bash
+pygmentize -O style=github-dark config/customers/schema.json | less
+pygmentize -O style=github-dark config/customers/table.json | less
+```
 
 ```bash
 docker run \
@@ -101,7 +133,7 @@ Statuses for a booking reference
 ```sql
 select * 
 from customer_actions 
-where booking_reference = 'JU8893-39d38b7a-c7b3-4087-90de-aaac647a3fb7'
+where booking_reference = '<booking-ref>'
 limit 10
 option(skipUpsert=true)
 ```
@@ -111,7 +143,7 @@ How many people have checkedin for a flight?
 ```sql
 select message_type, count(*) 
 from customer_actions
-where flight_id = 'JU8893'
+where flight_id = '<flightId>'
 group by message_type
 limit 10
 ```
