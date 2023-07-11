@@ -68,6 +68,16 @@ def delay_triggered(flight_id, delay_time):
         publish_event(producer, "flight-statuses", event, key=event["data"]["flight_id"])
         producer.flush()
 
+        query = f"""
+            SELECT 'Next Available Flight' as description, scheduled_departure_time
+            FROM flight_statuses
+            WHERE arrival_airport = '{destination}'
+            AND scheduled_departure_time > {int(departure_time.timestamp() * 1000)}
+            AND flight_id <> '{flight_id}'
+            ORDER BY scheduled_departure_time
+            LIMIT 1
+        """
+
         print("flight_id", flight_id)
         curs.execute(f"""
         select arrival_airport, customer_actions.flight_id, passenger_id, Name, ToDateTime(ts, 'YYYY-MM-dd HH:mm') AS ts, customer_actions.message_type AS status

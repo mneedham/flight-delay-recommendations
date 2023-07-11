@@ -37,8 +37,7 @@ topic_consumer = client.get_topic_consumer(
 
 events_to_consume = 5
 events_consumed = 0
-cts = CancellationTokenSource()  # used for interrupting the App
-
+cts = CancellationTokenSource()
 
 def on_event_data_received_handler(stream: StreamConsumer, data: EventData):
     global events_to_consume, events_consumed, cts
@@ -91,11 +90,6 @@ def on_event_data_received_handler(stream: StreamConsumer, data: EventData):
         message = qx.RawMessage(json.dumps(notification, indent=2).encode('utf-8'))
         message.key = payload["passenger_id"].encode('utf-8')
         producer.publish(message)
-        
-        # take messages
-        # pass the context to LLM
-        # generate personalised notification for each customer  (3-5 seconds per customer)
-        # Publish the message to dispatches
 
 def on_stream_received_handler(stream_received: StreamConsumer):
     stream_received.events.on_data_received = on_event_data_received_handler
