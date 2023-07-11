@@ -147,3 +147,45 @@ where flight_id = '<flightId>'
 group by message_type
 limit 10
 ```
+
+## Trigger Delay
+
+First find a popular location:
+
+```sql
+select arrival_airport, count(*)
+from flight_statuses
+group by arrival_airport
+order by count(*) DESC
+limit 10;
+```
+
+Find flights to that destination:
+
+```sql
+select flight_id, scheduled_departure_time, airline
+from flight_statuses 
+where arrival_airport = '<arrival-airport>'
+order by scheduled_departure_time
+limit 10;
+```
+
+```bash
+python trigger_delay.py --flight-id <flight-id> --delay-time <delay>
+```
+
+Services:
+
+* Delays - Consumes `flight-statuses` and publishes delayed customer details to `massaged-delays`
+* Personaliser - Consumes `massaged-delays`, creates peronalised messages, and publishes those to `notifications`
+* Dispatcher - Consumes `notifications` and prints those messages to stdout
+
+```bash
+python services/delays.py
+```
+
+View messages - http://localhost:8080/topics/massaged-delays?p=-1&s=50&o=-1#messages
+
+```bash
+python services/personaliser.py
+```

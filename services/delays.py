@@ -14,8 +14,8 @@ topic_consumer = client.get_topic_consumer(
     # consumer_group="flight-delay-notifications"
 )
 
-topic_producer = client.get_topic_producer(topic = "massaged-delays")
-delays_stream = topic_producer.create_stream()
+# topic_producer = client.get_topic_producer(topic = "massaged-delays")
+# delays_stream = topic_producer.create_stream()
 
 find_customers_query="""
 select arrival_airport, 

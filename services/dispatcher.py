@@ -15,8 +15,6 @@ topic_consumer = client.get_topic_consumer(
 def on_event_data_received_handler(stream: StreamConsumer, data: EventData):
     with data:
         payload = json.loads(data.value)
-        
-    
         # send out the notifications                            (asynchronous)
         print(payload)
 

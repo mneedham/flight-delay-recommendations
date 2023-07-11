@@ -1,5 +1,5 @@
 import quixstreams as qx
-from quixstreams import StreamConsumer, EventData
+from quixstreams import StreamConsumer, EventData, CancellationTokenSource
 import time
 import json
 from langchain.llms import HuggingFacePipeline
@@ -7,6 +7,8 @@ from langchain.chains.question_answering import load_qa_chain
 from langchain.llms import OpenAI
 from langchain.prompts import PromptTemplate
 from llama_index.bridge.langchain import Document as LCDocument
+import sys
+import threading
 
 # LLM setup
 question="""
@@ -30,11 +32,23 @@ client = qx.KafkaStreamingClient('127.0.0.1:9092')
 topic_consumer = client.get_topic_consumer(
     topic="massaged-delays",
     auto_offset_reset=qx.AutoOffsetReset.Earliest,
-    # consumer_group="massaged-delays-consumer"
+    # consumer_group="massaged-delays-consumer3"
 )
 
+events_to_consume = 5
+events_consumed = 0
+cts = CancellationTokenSource()  # used for interrupting the App
+
+
 def on_event_data_received_handler(stream: StreamConsumer, data: EventData):
+    global events_to_consume, events_consumed, cts
     with data, (producer := client.get_raw_topic_producer("notifications")):
+        if events_consumed >= events_to_consume-1:
+            threading.Thread(target=lambda: cts.cancel()).start()
+            print("should cancel here...")
+            cts.cancel()
+
+        events_consumed += 1
         payload = json.loads(data.value)
         print(payload)
         
@@ -92,4 +106,7 @@ print("Listening to streams. Press CTRL-C to exit.")
 topic_consumer.on_stream_received = on_stream_received_handler
 topic_consumer.subscribe()
 
-qx.App.run()
+def before_shutdown():
+    print('before shutdown')
+
+qx.App.run(cts.token, before_shutdown=before_shutdown)
