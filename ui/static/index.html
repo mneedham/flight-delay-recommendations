@@ -1,37 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>Personalized Notifications</title>
 
   <link rel="stylesheet" type="text/css"
-        href="https://cdnjs.cloudflare.com/ajax/libs/patternfly/3.24.0/css/patternfly.min.css">
+    href="https://cdnjs.cloudflare.com/ajax/libs/patternfly/3.24.0/css/patternfly.min.css">
   <link rel="stylesheet" type="text/css"
-        href="https://cdnjs.cloudflare.com/ajax/libs/patternfly/3.24.0/css/patternfly-additions.min.css">
+    href="https://cdnjs.cloudflare.com/ajax/libs/patternfly/3.24.0/css/patternfly-additions.min.css">
 </head>
-<body>
-<div class="container">
-  <div class="card">
-    <div class="card-body">
-      <h2 class="card-title">Personalized Notifications</h2>
-      <div class="pf-c-hint">
-        <div class="pf-c-hint__body">
-          Hello John Doe,
 
-          We are sorry to inform that something has fucked up your flight..
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="card-body">
+        <h2 class="card-title">Personalized Notifications</h2>
+        <div class="pf-c-hint">
+          <div class="pf-c-hint__body">
+            Below are examples of notifications sent to airline customers.
+          </div>
         </div>
+        <div id="notification"></div>
       </div>
-      <div id="notification"></div>
     </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+      #notification-list {
+        list-style-type: none;
+        padding: 0;
+      }
+
+      .notification-item {
+        border: 1px solid #ccc;
+        margin-bottom: 10px;
+        padding: 10px;
+        background-color: #f5f5f5;
+      }
+    </style>
+
+    <div id="notification-container">
+      <ul id="notification-list"></ul>
+    </div>
+
+    <script>
+      var source = new EventSource("/notifications");
+
+      source.onmessage = (event) => {
+        console.log(event);
+        var notificationData = JSON.parse(event.data);
+
+        // Create a new list item
+        var listItem = document.createElement("li");
+        listItem.className = "notification-item";
+        listItem.textContent = notificationData.message;
+
+        // Add the new item to the notification list
+        var notificationList = document.getElementById("notification-list");
+        notificationList.prepend(listItem);
+      };
+    </script>
+
   </div>
-</div>
 </body>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-    var source = new EventSource("/notifications");
-    source.onmessage = (event) => {
-    //   var message = JSON.parse(event.data);
-      $("#notification").html("<p>" + event.data + "</p>");
-    };
-</script>
+
 </html>

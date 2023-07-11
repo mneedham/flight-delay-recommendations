@@ -1,12 +1,6 @@
 import json
 from datetime import datetime, timedelta
 from pinotdb import connect
-from llama_index import download_loader
-from langchain.llms import HuggingFacePipeline
-from langchain.chains.question_answering import load_qa_chain
-from llama_index.bridge.langchain import Document as LCDocument
-from langchain.llms import OpenAI
-from langchain.prompts import PromptTemplate
 import csv
 import random
 import click
@@ -15,11 +9,6 @@ import pandas as pd
 from confluent_kafka import Producer
 
 conn = connect(host='localhost', port=8099, path='/query/sql', scheme='http')
-
-DatabaseReader = download_loader('DatabaseReader')
-reader = DatabaseReader(
-    uri="pinot+http://localhost:8099/query/sql?controller=http://localhost:9000"
-)
 
 def acked(err, msg):
     if err is not None:

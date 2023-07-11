@@ -21,10 +21,11 @@ async def root():
 async def notifications(request: Request):
     consumer = KafkaConsumer(
         bootstrap_servers=["localhost:9092"],
-        group_id="demo-group",
+        group_id="demo-group95",
         auto_offset_reset="earliest",
         enable_auto_commit=False,
-        consumer_timeout_ms=1000
+        consumer_timeout_ms=1000,
+        value_deserializer=lambda x: x.decode("utf-8") 
     )
 
     consumer.subscribe("notifications")
@@ -36,18 +37,16 @@ async def notifications(request: Request):
 
             # Checks for new messages and return them to client if any
             for message in consumer:
-                message_info = f"key: {message.key}, {message.value}"
+                message_info = f"{message.value}\n\n"
                 print(f"{message_info}")
 
                 yield message_info 
 
-        await asyncio.sleep(STREAM_DELAY)
+            await asyncio.sleep(STREAM_DELAY)
 
     return EventSourceResponse(event_generator())
 
 
-
   
-
-
-
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True, access_log=True)

@@ -32,12 +32,36 @@ client = qx.KafkaStreamingClient('127.0.0.1:9092')
 topic_consumer = client.get_topic_consumer(
     topic="massaged-delays",
     auto_offset_reset=qx.AutoOffsetReset.Earliest,
-    # consumer_group="massaged-delays-consumer3"
+    consumer_group="massaged-delays-consumer4"
 )
 
 events_to_consume = 5
 events_consumed = 0
 cts = CancellationTokenSource()
+
+
+def create_context_messages(payload):
+        flight_id = payload["flight_id"]
+        destination = payload["arrival_airport"]
+        departure_time = payload["departure_time"]
+
+        return [
+            LCDocument(page_content=f"""Delayed flight:
+            Flight Number: {flight_id}, Destination: {destination} 
+            Initial flight time: {departure_time}
+            New flight time: 2023-06-28 08:55:07.764000"""),
+            LCDocument(page_content="""Compensation rules: 
+            Compensation between £200 and £500 for a 3+ hour delay
+            Food/Drink vouchers for a 1+ hour delay
+            Hotel if flight is delayed until the next day
+            """),
+            LCDocument(page_content="Frequent flyer statuses are: 'Bronze', 'Silver', 'Gold', 'Platinum'"),
+            LCDocument(page_content=f"""
+            Customer Details: 
+            Name: {payload["passenger"]}, lastStatus: {payload["lastStatus"]}, FrequentFlyerStatus: {payload["FrequentFlyerStatus"]}, LoyaltyScore: {payload["LoyaltyScore"]} out of 5
+            """)
+        ]
+
 
 def on_event_data_received_handler(stream: StreamConsumer, data: EventData):
     global events_to_consume, events_consumed, cts
@@ -51,28 +75,7 @@ def on_event_data_received_handler(stream: StreamConsumer, data: EventData):
         payload = json.loads(data.value)
         print(payload)
         
-        flight_id = payload["flight_id"]
-        destination = payload["arrival_airport"]
-        departure_time = payload["departure_time"]
-
-        documents = [
-            LCDocument(page_content=f"""Delayed flight:
-            Flight Number: {flight_id}, Destination: {destination} 
-            Initial flight time: {departure_time}
-            New flight time: 2023-06-28 08:55:07.764000"""),
-            LCDocument(page_content="""Compensation rules: 
-            Compensation between £200 and £500 for a 3+ hour delay
-            Food/Drink vouchers for a 1+ hour delay
-            Hotel if flight is delayed until the next day
-            """),
-            LCDocument(page_content="Frequent flyer statuses are: Bronze', 'Silver', 'Gold', 'Platinum"),
-            LCDocument(page_content=f"""
-            Customer Details: 
-            Name: {payload["passenger"]}, lastStatus: {payload["lastStatus"]}, FrequentFlyerStatus: {payload["FrequentFlyerStatus"]}, LoyaltyScore: {payload["LoyaltyScore"]} out of 5
-            """)
-        ]
-
-    
+        documents = create_context_messages(payload)    
         print("".join([doc.page_content for doc in documents]))
 
         # generate notification 
@@ -80,7 +83,7 @@ def on_event_data_received_handler(stream: StreamConsumer, data: EventData):
         # qa_chain = load_qa_chain(llm)
         # answer = qa_chain.run(input_documents=documents, question=question)
 
-        answer = f"Here goes the custom message that will be sent to {payload['passenger']}"
+        answer = f"Here goes the special message that will be sent to {payload['passenger']}"
 
         notification = {
             "message": answer,
