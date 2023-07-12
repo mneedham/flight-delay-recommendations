@@ -27,6 +27,9 @@ prompt = PromptTemplate(
     template=question, input_variables=["context"]
 )
 
+llm = OpenAI(temperature=0)
+qa_chain = load_qa_chain(llm)
+
 client = qx.KafkaStreamingClient('127.0.0.1:9092')
 
 topic_consumer = client.get_topic_consumer(
@@ -36,7 +39,7 @@ topic_consumer = client.get_topic_consumer(
     commit_settings=CommitMode.Manual
 )
 
-events_to_consume = 5
+events_to_consume = 1
 events_consumed = 0
 threadLock = threading.Lock()
 cts = CancellationTokenSource()
@@ -70,7 +73,8 @@ def on_event_data_received_handler(stream: StreamConsumer, data: EventData):
     with data, (producer := client.get_raw_topic_producer("notifications")):
         if events_consumed >= events_to_consume:
             threading.Thread(target=lambda: cts.cancel()).start()
-            cts.cancel()
+            # cts.cancel()
+            print("Cancellation token triggered")
             return
 
         with threadLock:
@@ -82,20 +86,28 @@ def on_event_data_received_handler(stream: StreamConsumer, data: EventData):
         print(f"{events_consumed}: {''.join([doc.page_content for doc in documents])}")
 
         # generate notification 
-        # llm = OpenAI(temperature=0)
-        # qa_chain = load_qa_chain(llm)
-        # answer = qa_chain.run(input_documents=documents, question=question)
+        
+        answer = qa_chain.run(input_documents=documents, question=question)
+        print(answer)
 
-        answer = f"Here goes the incroible message that will be sent to {payload['passenger']}"
-
+        # answer = f"Here goes the super message that will be sent to {payload['passenger']}"
         notification = {
             "message": answer,
             "passenger_id": payload["passenger_id"]
         }
 
+        # time.sleep(5)
+        # notification = {
+        #     'message': '\nDear Christian Hope, \nWe apologize for the delay of your flight LO5633 to Tokyo International Airport. The new flight time is 2023-06-28 08:55:07.764000. \n\nAs a Platinum frequent flyer, we would like to offer you a compensation of £500 for the 3+ hour delay. We can also provide you with food/drink vouchers and a hotel if the flight is delayed until the next day. \n\nWe suggest that you take the new flight time as it is the best option for you. \n\nWe apologize for the inconvenience and thank you for your loyalty. \n\nSincerely, \nThe Flight Team', 
+        #     'passenger_id': 'f5504e29-387f-4b91-a96f-f9ebed2cdacd'
+        # }
+        # print(notification)
+
         message = qx.RawMessage(json.dumps(notification, indent=2).encode('utf-8'))
         message.key = payload["passenger_id"].encode('utf-8')
         producer.publish(message)
+        print("Publish message")
+        time.sleep(2)
         topic_consumer.commit()
 
 def on_stream_received_handler(stream_received: StreamConsumer):

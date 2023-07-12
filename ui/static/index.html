@@ -79,7 +79,7 @@
 
         const messageItem = document.createElement("div")
         messageItem.className = "notification-message";
-        messageItem.textContent = notificationData.message;
+        messageItem.innerHTML = notificationData.message.replace(/^\n+/, '').replace(/\n/g, '<br>');
 
         const listItem = document.createElement("li");
         listItem.className = "notification-item";
