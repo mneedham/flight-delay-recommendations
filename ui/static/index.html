@@ -38,6 +38,27 @@
         padding: 10px;
         background-color: #f5f5f5;
       }
+
+      .notification-passenger {
+        padding: 0.5em;
+        background: lightblue;
+        color: black;
+        font-weight: 600;
+        border-radius: 0.5em 0.5em 0 0;
+      }
+
+      .notification-message {
+        padding: 0.5em;
+        background: white;
+        border-radius: 0 0 0.5em 0.5em;
+      }
+
+      .highlight {
+        background-color: yellow;  /* Or any other highlight color you prefer */
+        transition: background-color 3s ease-out;  /* Smoothly fade out over one second */
+      }
+
+
     </style>
 
     <div id="notification-container">
@@ -49,15 +70,29 @@
 
       source.onmessage = (event) => {
         console.log(event);
-        var notificationData = JSON.parse(event.data);
+        const notificationData = JSON.parse(event.data);
 
         // Create a new list item
-        var listItem = document.createElement("li");
+        const passengerItem = document.createElement("div")
+        passengerItem.className = "notification-passenger";
+        passengerItem.textContent = `Passenger ${notificationData.passenger_id}`;
+
+        const messageItem = document.createElement("div")
+        messageItem.className = "notification-message";
+        messageItem.textContent = notificationData.message;
+
+        const listItem = document.createElement("li");
         listItem.className = "notification-item";
-        listItem.textContent = notificationData.message;
+        listItem.appendChild(passengerItem);
+        listItem.appendChild(messageItem);
+
+        listItem.classList.add("highlight");
+        setTimeout(() => {
+          listItem.classList.remove("highlight");
+        }, 1000);
 
         // Add the new item to the notification list
-        var notificationList = document.getElementById("notification-list");
+        const notificationList = document.getElementById("notification-list");
         notificationList.prepend(listItem);
       };
     </script>

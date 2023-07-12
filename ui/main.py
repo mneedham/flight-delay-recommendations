@@ -6,6 +6,7 @@ from kafka import KafkaConsumer
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from sse_starlette.sse import EventSourceResponse
+import signal
 
 STREAM_DELAY = 1  # second
 RETRY_TIMEOUT = 15000  # milisecond
@@ -13,12 +14,15 @@ RETRY_TIMEOUT = 15000  # milisecond
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static",html = True), name="static")
 
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
+def stop_kafka_consumer():
+    print("Stopping Kafka consumer")
+    if consumer:
+        consumer.close()
 
-@app.get("/notifications")
-async def notifications(request: Request):
+@app.on_event("startup")
+async def startup_event():
+    global consumer
+
     consumer = KafkaConsumer(
         bootstrap_servers=["localhost:9092"],
         group_id="demo-group95",
@@ -27,9 +31,13 @@ async def notifications(request: Request):
         consumer_timeout_ms=1000,
         value_deserializer=lambda x: x.decode("utf-8") 
     )
-
     consumer.subscribe("notifications")
+    signal.signal(signal.SIGINT, stop_kafka_consumer)
+    signal.signal(signal.SIGTERM, stop_kafka_consumer)
 
+@app.get("/notifications")
+async def notifications(request: Request):
+    global consumer
     async def event_generator():
         while True:
             if await request.is_disconnected():

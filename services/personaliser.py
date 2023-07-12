@@ -1,5 +1,5 @@
 import quixstreams as qx
-from quixstreams import StreamConsumer, EventData, CancellationTokenSource
+from quixstreams import StreamConsumer, EventData, CancellationTokenSource, CommitMode
 import time
 import json
 from langchain.llms import HuggingFacePipeline
@@ -32,11 +32,13 @@ client = qx.KafkaStreamingClient('127.0.0.1:9092')
 topic_consumer = client.get_topic_consumer(
     topic="massaged-delays",
     auto_offset_reset=qx.AutoOffsetReset.Earliest,
-    consumer_group="massaged-delays-consumer4"
+    consumer_group="massaged-delays-consumer4",
+    commit_settings=CommitMode.Manual
 )
 
 events_to_consume = 5
 events_consumed = 0
+threadLock = threading.Lock()
 cts = CancellationTokenSource()
 
 
@@ -64,26 +66,27 @@ def create_context_messages(payload):
 
 
 def on_event_data_received_handler(stream: StreamConsumer, data: EventData):
-    global events_to_consume, events_consumed, cts
+    global events_to_consume, events_consumed, cts, topic_consumer
     with data, (producer := client.get_raw_topic_producer("notifications")):
-        if events_consumed >= events_to_consume-1:
+        if events_consumed >= events_to_consume:
             threading.Thread(target=lambda: cts.cancel()).start()
-            print("should cancel here...")
             cts.cancel()
+            return
 
-        events_consumed += 1
+        with threadLock:
+            events_consumed += 1
         payload = json.loads(data.value)
-        print(payload)
+        print(payload)        
         
         documents = create_context_messages(payload)    
-        print("".join([doc.page_content for doc in documents]))
+        print(f"{events_consumed}: {''.join([doc.page_content for doc in documents])}")
 
         # generate notification 
         # llm = OpenAI(temperature=0)
         # qa_chain = load_qa_chain(llm)
         # answer = qa_chain.run(input_documents=documents, question=question)
 
-        answer = f"Here goes the special message that will be sent to {payload['passenger']}"
+        answer = f"Here goes the incroible message that will be sent to {payload['passenger']}"
 
         notification = {
             "message": answer,
@@ -93,6 +96,7 @@ def on_event_data_received_handler(stream: StreamConsumer, data: EventData):
         message = qx.RawMessage(json.dumps(notification, indent=2).encode('utf-8'))
         message.key = payload["passenger_id"].encode('utf-8')
         producer.publish(message)
+        topic_consumer.commit()
 
 def on_stream_received_handler(stream_received: StreamConsumer):
     stream_received.events.on_data_received = on_event_data_received_handler
