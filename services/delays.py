@@ -13,6 +13,7 @@ topic_consumer = client.get_topic_consumer(
     auto_offset_reset=qx.AutoOffsetReset.Earliest,
     # consumer_group="flight-delay-notifications"
 )
+topic_producer = client.get_raw_topic_producer("massaged-delays")
 
 # topic_producer = client.get_topic_producer(topic = "massaged-delays")
 # delays_stream = topic_producer.create_stream()
@@ -40,21 +41,18 @@ LIMIT 500
 def on_event_data_received_handler(stream: StreamConsumer, data: EventData):
     with data:
         payload = json.loads(data.value)        
-
         if payload["message_type"] == "flight_delay":
-            with (producer := client.get_raw_topic_producer("massaged-delays")):
-                # find all the customers affected 
-                flight_id = payload["data"]["flight_id"]
-                curs = conn.cursor()
-                curs.execute(find_customers_query, {"flightId": flight_id}, queryOptions="useMultistageEngine=true")
-                customers = pd.DataFrame(curs, columns=[item[0] for item in curs.description])
-                curs.close()
-                for index, customer in customers.iterrows():
-                    customer_message = customer.to_dict()
+            flight_id = payload["data"]["flight_id"]
+            curs = conn.cursor()
+            curs.execute(find_customers_query, {"flightId": flight_id}, queryOptions="useMultistageEngine=true")
+            customers = pd.DataFrame(curs, columns=[item[0] for item in curs.description])
+            curs.close()
+            for index, customer in customers.iterrows():
+                customer_message = customer.to_dict()
 
-                    message = qx.RawMessage(json.dumps(customer_message, indent=2).encode('utf-8'))
-                    message.key = customer_message["passenger_id"].encode('utf-8')
-                    producer.publish(message)
+                message = qx.RawMessage(json.dumps(customer_message, indent=2).encode('utf-8'))
+                message.key = customer_message["passenger_id"].encode('utf-8')
+                topic_producer.publish(message)
 
 def on_stream_received_handler(stream_received: StreamConsumer):
     stream_received.events.on_data_received = on_event_data_received_handler

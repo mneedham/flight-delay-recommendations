@@ -10,27 +10,39 @@ from llama_index.bridge.langchain import Document as LCDocument
 import sys
 import threading
 
+from llama_index import download_loader
+import datetime as dt
+
 # LLM setup
 question="""
 {context}
 The customer's flight has been delayed.
-The next available flight and compensation rules are described above.
+The details about the flight, as well as next available flights and compensation rules are described above.
 
-Please generate a message for the passenger detailing these options and advising on the best course of action. 
-The message doesn't need to be super serious, but be apologetic because they are going to be annoyed.  
-Also indicate if they will receive any compensation and say the exact £ amount they will receive.
+Generate a message fo the customer advising on the best course of action. 
+Make sure you mention flight number, destination, and departure time.
+Please be apologetic because they are going to be annoyed.  
+Indicate if they will receive any compensation and don't tell them the range, tell them the exact £ amount they will receive.
 Take customer details into account when replying and remember that Platinum status is best, then Gold, Silver, Bronze.
-Keep the message to say 1 or 2 paragraphs and don't list every option.
+When choosing the next available flight, give the soonest flights to people highest status, but don't mention their status in your reasoning and only suggest one flight.
+Keep the message to 1 or 2 paragraphs and don't list every option.
 Suggest which one you think is best and only use the data provided, don't make stuff up.
 """
 prompt = PromptTemplate(
     template=question, input_variables=["context"]
 )
 
-llm = OpenAI(temperature=0)
+llm = OpenAI(temperature=0,)
 qa_chain = load_qa_chain(llm)
 
 client = qx.KafkaStreamingClient('127.0.0.1:9092')
+
+DatabaseReader = download_loader('DatabaseReader')
+reader = DatabaseReader(
+    uri="pinot+http://localhost:8099/query/sql?controller=http://localhost:9000"
+)
+
+
 
 topic_consumer = client.get_topic_consumer(
     topic="massaged-delays",
@@ -38,11 +50,14 @@ topic_consumer = client.get_topic_consumer(
     consumer_group="massaged-delays-consumer4",
     commit_settings=CommitMode.Manual
 )
+producer = client.get_raw_topic_producer("notifications")
 
 events_to_consume = 1
 events_consumed = 0
 threadLock = threading.Lock()
+
 cts = CancellationTokenSource()
+cancellation_thread = threading.Thread(target=lambda: cts.cancel())
 
 
 def create_context_messages(payload):
@@ -50,11 +65,26 @@ def create_context_messages(payload):
         destination = payload["arrival_airport"]
         departure_time = payload["departure_time"]
 
-        return [
+        dep_time = dt.datetime.strptime(departure_time, "%Y-%m-%d %H:%M")
+
+        query = f"""
+            SELECT 'Next Available Flight' as description, 
+            ToDateTime(scheduled_departure_time, 'YYYY-MM-dd HH:mm') AS scheduledDepartureTime, 
+            flight_id
+            FROM flight_statuses
+            WHERE arrival_airport = '{destination}'
+            AND scheduled_departure_time > {int(dep_time.timestamp() * 1000)}
+            AND flight_id <> '{flight_id}'
+            ORDER BY scheduled_departure_time
+            LIMIT 5
+        """
+
+        documents = reader.load_langchain_documents(query=query)
+
+        return documents + [
             LCDocument(page_content=f"""Delayed flight:
-            Flight Number: {flight_id}, Destination: {destination} 
-            Initial flight time: {departure_time}
-            New flight time: 2023-06-28 08:55:07.764000"""),
+            Flight Number: {flight_id}, Destination: {destination},
+            Departure time: {departure_time}"""),
             LCDocument(page_content="""Compensation rules: 
             Compensation between £200 and £500 for a 3+ hour delay
             Food/Drink vouchers for a 1+ hour delay
@@ -70,23 +100,21 @@ def create_context_messages(payload):
 
 def on_event_data_received_handler(stream: StreamConsumer, data: EventData):
     global events_to_consume, events_consumed, cts, topic_consumer
-    with data, (producer := client.get_raw_topic_producer("notifications")):
+    with data:
         if events_consumed >= events_to_consume:
-            threading.Thread(target=lambda: cts.cancel()).start()
-            # cts.cancel()
-            print("Cancellation token triggered")
+            if not cancellation_thread.is_alive():
+                cancellation_thread.start()
+                print("Cancellation token triggered")
             return
 
         with threadLock:
             events_consumed += 1
         payload = json.loads(data.value)
-        print(payload)        
+        print(payload)
         
         documents = create_context_messages(payload)    
         print(f"{events_consumed}: {''.join([doc.page_content for doc in documents])}")
 
-        # generate notification 
-        
         answer = qa_chain.run(input_documents=documents, question=question)
         print(answer)
 
@@ -96,18 +124,10 @@ def on_event_data_received_handler(stream: StreamConsumer, data: EventData):
             "passenger_id": payload["passenger_id"]
         }
 
-        # time.sleep(5)
-        # notification = {
-        #     'message': '\nDear Christian Hope, \nWe apologize for the delay of your flight LO5633 to Tokyo International Airport. The new flight time is 2023-06-28 08:55:07.764000. \n\nAs a Platinum frequent flyer, we would like to offer you a compensation of £500 for the 3+ hour delay. We can also provide you with food/drink vouchers and a hotel if the flight is delayed until the next day. \n\nWe suggest that you take the new flight time as it is the best option for you. \n\nWe apologize for the inconvenience and thank you for your loyalty. \n\nSincerely, \nThe Flight Team', 
-        #     'passenger_id': 'f5504e29-387f-4b91-a96f-f9ebed2cdacd'
-        # }
-        # print(notification)
-
         message = qx.RawMessage(json.dumps(notification, indent=2).encode('utf-8'))
         message.key = payload["passenger_id"].encode('utf-8')
         producer.publish(message)
-        print("Publish message")
-        time.sleep(2)
+
         topic_consumer.commit()
 
 def on_stream_received_handler(stream_received: StreamConsumer):
@@ -120,6 +140,11 @@ topic_consumer.on_stream_received = on_stream_received_handler
 topic_consumer.subscribe()
 
 def before_shutdown():
-    print('before shutdown')
+    print('before shutdown')    
+    topic_consumer.dispose()
+    time.sleep(1)
+    producer.dispose()    
+    time.sleep(1)
 
 qx.App.run(cts.token, before_shutdown=before_shutdown)
+cancellation_thread.join()
