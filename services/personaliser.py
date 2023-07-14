@@ -11,7 +11,9 @@ import sys
 import threading
 
 from llama_index import download_loader
+from pinotdb import connect
 import datetime as dt
+import pandas as pd
 
 # LLM setup
 question="""
@@ -20,11 +22,10 @@ The customer's flight has been delayed.
 The details about the flight, as well as next available flights and compensation rules are described above.
 
 Generate a message fo the customer advising on the best course of action. 
-Make sure you mention flight number, destination, and departure time.
-Please be apologetic because they are going to be annoyed.  
+Make sure you mention flight number, destination, departure time, and delayed departure time.
+Please be apologetic because they are going to be annoyed and if the new flight is later than the delayed departure time, don't suggest they book a new flight.
 Indicate if they will receive any compensation and don't tell them the range, tell them the exact £ amount they will receive.
 Take customer details into account when replying and remember that Platinum status is best, then Gold, Silver, Bronze.
-When choosing the next available flight, give the soonest flights to people highest status, but don't mention their status in your reasoning and only suggest one flight.
 Keep the message to 1 or 2 paragraphs and don't list every option.
 Suggest which one you think is best and only use the data provided, don't make stuff up.
 """
@@ -32,7 +33,7 @@ prompt = PromptTemplate(
     template=question, input_variables=["context"]
 )
 
-llm = OpenAI(temperature=0,)
+llm = OpenAI(temperature=0)
 qa_chain = load_qa_chain(llm)
 
 client = qx.KafkaStreamingClient('127.0.0.1:9092')
@@ -41,7 +42,7 @@ DatabaseReader = download_loader('DatabaseReader')
 reader = DatabaseReader(
     uri="pinot+http://localhost:8099/query/sql?controller=http://localhost:9000"
 )
-
+conn = connect(host='localhost', port=8099, path='/query/sql', scheme='http')
 
 
 topic_consumer = client.get_topic_consumer(
@@ -64,27 +65,47 @@ def create_context_messages(payload):
         flight_id = payload["flight_id"]
         destination = payload["arrival_airport"]
         departure_time = payload["departure_time"]
+        new_departure_time = payload["new_departure_time"]
 
         dep_time = dt.datetime.strptime(departure_time, "%Y-%m-%d %H:%M")
 
-        query = f"""
-            SELECT 'Next Available Flight' as description, 
-            ToDateTime(scheduled_departure_time, 'YYYY-MM-dd HH:mm') AS scheduledDepartureTime, 
-            flight_id
-            FROM flight_statuses
-            WHERE arrival_airport = '{destination}'
-            AND scheduled_departure_time > {int(dep_time.timestamp() * 1000)}
-            AND flight_id <> '{flight_id}'
-            ORDER BY scheduled_departure_time
-            LIMIT 5
+        available_seats_query = f"""
+            SELECT description, scheduledDepartureTime, flight_id, totalSeats - takenSeats AS availableSeats
+            FROM (
+                SELECT 'Next Available Flight' as description, arrival_airport, scheduled_departure_time,
+                        ToDateTime(scheduled_departure_time, 'YYYY-MM-dd HH:mm') AS scheduledDepartureTime, 
+                        flight_statuses.flight_id,
+                        available_seats AS totalSeats, count(*) AS takenSeats
+                FROM flight_statuses
+                join customer_actions ON customer_actions.flight_id = flight_statuses.flight_id
+                GROUP By description, scheduledDepartureTime, flight_statuses.flight_id, totalSeats, arrival_airport, scheduled_departure_time
+            )
+            WHERE totalSeats - takenSeats > 0
+            AND arrival_airport = (%(destination)s)
+            AND flight_id <> (%(flightId)s)
         """
 
-        documents = reader.load_langchain_documents(query=query)
+        curs = conn.cursor()
+        params = {
+            "flightId": flight_id,
+            "destination": destination,
+            "departureTime": int(dep_time.timestamp() * 1000)
+        }
 
-        return documents + [
+        curs.execute(available_seats_query, params, queryOptions="useMultistageEngine=true")
+        new_flights = pd.DataFrame(curs, columns=[item[0] for item in curs.description])
+        new_flights['scheduledDepartureTime'] = pd.to_datetime(new_flights['scheduledDepartureTime'])
+
+        filtered_flights = new_flights[new_flights['scheduledDepartureTime'] > dep_time]
+        random_row = filtered_flights.sample(n=1)
+        new_flight_details  = random_row.to_json(orient='records', date_format='iso')
+
+
+        return [
             LCDocument(page_content=f"""Delayed flight:
             Flight Number: {flight_id}, Destination: {destination},
-            Departure time: {departure_time}"""),
+            Departure time: {departure_time}, New Departure time: {new_departure_time}\n"""),
+            LCDocument(page_content=f"New flight details: {new_flight_details}\n"),
             LCDocument(page_content="""Compensation rules: 
             Compensation between £200 and £500 for a 3+ hour delay
             Food/Drink vouchers for a 1+ hour delay
@@ -147,4 +168,5 @@ def before_shutdown():
     time.sleep(1)
 
 qx.App.run(cts.token, before_shutdown=before_shutdown)
-cancellation_thread.join()
+if cancellation_thread.is_alive():
+    cancellation_thread.join()  

@@ -43,7 +43,6 @@ async def notifications(request: Request):
             if await request.is_disconnected():
                 break
 
-            # Checks for new messages and return them to client if any
             for message in consumer:
                 message_info = f"{message.value}\n\n"
                 print(f"{message_info}")

@@ -4,6 +4,7 @@ import time
 import json
 from pinotdb import connect
 import pandas as pd
+import datetime as dt
 
 conn = connect(host='localhost', port=8099, path='/query/sql', scheme='http')
 client = qx.KafkaStreamingClient('127.0.0.1:9092')
@@ -11,7 +12,7 @@ client = qx.KafkaStreamingClient('127.0.0.1:9092')
 topic_consumer = client.get_topic_consumer(
     topic="flight-statuses",
     auto_offset_reset=qx.AutoOffsetReset.Earliest,
-    # consumer_group="flight-delay-notifications"
+    consumer_group="flight-delay-notifications"
 )
 topic_producer = client.get_raw_topic_producer("massaged-delays")
 
@@ -42,13 +43,21 @@ def on_event_data_received_handler(stream: StreamConsumer, data: EventData):
     with data:
         payload = json.loads(data.value)        
         if payload["message_type"] == "flight_delay":
+            print(payload)
             flight_id = payload["data"]["flight_id"]
+
+            epoch_timestamp_sec = payload["data"]["new_departure_time"] / 1000.0
+            date = dt.datetime.fromtimestamp(epoch_timestamp_sec)
+            new_departure_time = date.strftime("%Y-%m-%d %H:%M")
+
+
             curs = conn.cursor()
             curs.execute(find_customers_query, {"flightId": flight_id}, queryOptions="useMultistageEngine=true")
             customers = pd.DataFrame(curs, columns=[item[0] for item in curs.description])
             curs.close()
             for index, customer in customers.iterrows():
                 customer_message = customer.to_dict()
+                customer_message["new_departure_time"] = new_departure_time
 
                 message = qx.RawMessage(json.dumps(customer_message, indent=2).encode('utf-8'))
                 message.key = customer_message["passenger_id"].encode('utf-8')
