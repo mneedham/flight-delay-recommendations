@@ -4,7 +4,7 @@
 docker compose -f docker-compose-m1.yml up
 ```
 
-Set up Python environment:
+## Set up Python environment
 
 ```bash
 python -m venv env
@@ -12,7 +12,7 @@ source env/bin/activate
 pip install -r requirements.txt
 ```
 
-Create Redpanda topic:
+## Create Redpanda topics
 
 ```bash
 rpk topic create \
@@ -21,13 +21,15 @@ rpk topic create \
   flight-statuses customer-actions
 ```
 
-Run data generator:
+## Data generator
+
+The data generator creates flights, has customers book them, and then checks in customers.
 
 ```bash
 python datagen.py
 ```
 
-Check data in Redpanda
+## Check data in Redpanda
 
 Go to http://localhost:8080 or query from the command line:
 
@@ -41,8 +43,9 @@ head -n5
 rpk topic consume customer-actions --brokers localhost:9092 | 
 jq -Cc '.value | fromjson' | 
 head -n5
+```
 
-Create Pinot table:
+## Pinot
 
 ```bash
 pygmentize -O style=github-dark config/flights/schema.json | less
@@ -61,9 +64,9 @@ docker run \
   -exec
 ```
 
-Go to http://localhost:9000
+Go to http://localhost:9000 to see the Pinot UI.
 
-Querying flight statuses:
+Querying flight statuses
 
 ```sql
 select arrival_airport, count(*)
@@ -111,6 +114,8 @@ docker run \
   -exec
 ```
 
+This one is manually loaded:
+
 ```sql
 SET taskName = 'events-task7';
 SET input.fs.className = 'org.apache.pinot.spi.filesystem.LocalPinotFS';
@@ -150,6 +155,8 @@ limit 10
 
 ## Trigger Delay
 
+We're going to delay one of the flights.
+
 First find a popular location:
 
 ```sql
@@ -174,18 +181,40 @@ limit 10;
 python trigger_delay.py --flight-id <flight-id> --delay-time <delay>
 ```
 
-Services:
+## Services
 
-* Delays - Consumes `flight-statuses` and publishes delayed customer details to `massaged-delays`
-* Personaliser - Consumes `massaged-delays`, creates peronalised messages, and publishes those to `notifications`
-* Dispatcher - Consumes `notifications` and prints those messages to stdout
+### Delays
+
+Consumes `flight-statuses` and publishes delayed customer details to `massaged-delays`
 
 ```bash
 python services/delays.py
 ```
 
-View messages - http://localhost:8080/topics/massaged-delays?p=-1&s=50&o=-1#messages
+We can check for generated messages:
+
+```bash
+rpk topic consume massaged-delays |
+jq -Cc '.value | fromjson' | 
+head -n5
+```
+
+Or view the messages on the Redpanda console - http://localhost:8080/topics/massaged-delays?p=-1&s=50&o=-1#messages
+
+### Personaliser 
+
+Consumes `massaged-delays`, creates peronalised messages, and publishes those to `notifications`
+
+It consumes one message at a time
 
 ```bash
 python services/personaliser.py
+```
+
+###  Dispatcher 
+
+Consumes `notifications` and prints those messages to the UI.
+
+```bash
+cd ui && uvicorn main:app --reload
 ```

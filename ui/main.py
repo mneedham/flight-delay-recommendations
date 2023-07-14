@@ -14,7 +14,7 @@ RETRY_TIMEOUT = 15000  # milisecond
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static",html = True), name="static")
 
-def stop_kafka_consumer():
+def stop_kafka_consumer(x, y):
     print("Stopping Kafka consumer")
     if consumer:
         consumer.close()
