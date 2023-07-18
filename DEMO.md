@@ -203,6 +203,8 @@ Or view the messages on the Redpanda console - http://localhost:8080/topics/mass
 
 ### Personaliser 
 
+**Go to slides** to explain how it works.
+
 Consumes `massaged-delays`, creates peronalised messages, and publishes those to `notifications`
 
 It consumes one message at a time
