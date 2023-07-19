@@ -3,4 +3,4 @@
 This repository contains a demo showing how to build a real-time flight delay notification system.
 An architecture diagram of the system is shown below.
 
-image::images/architecture.png[]
+image::images/architecture.png[title="Flight Delay Recommendations Architecture Diagram"]
