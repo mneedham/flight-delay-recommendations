@@ -6,9 +6,14 @@ An architecture diagram of the system is shown below.
 image::images/architecture.png[title="Flight Delay Recommendations Architecture Diagram"]
 
 == Tools 
+
 We use the following tools:
 
 * Redpanda - In charge of all the streams.
 * Quix - Detects flight delay events and triggers customer notifications
 * Apache Pinot - Finds customers affected by delays and finds flights for impacted customers.
 * OpenAI - Generate the notification messages sent to customers
+
+== How do I run it?
+
+You can find step by step instructions in link:DEMO.md[DEMO.md]
