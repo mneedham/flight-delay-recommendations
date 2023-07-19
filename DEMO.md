@@ -18,7 +18,7 @@ pip install -r requirements.txt
 rpk topic create \
   -c cleanup.policy=compact \
   -r 1 -p 5 \
-  flight-statuses customer-actions
+  flight-statuses customer-actions massaged-delays notifications
 ```
 
 ## Data generator
@@ -145,6 +145,13 @@ option(skipUpsert=true)
 
 How many people have checkedin for a flight?
 
+
+First find a flight:
+```sql
+select * from flight_statuses limit 10
+```
+
+And then count the checkins:
 ```sql
 select message_type, count(*) 
 from customer_actions
@@ -179,6 +186,14 @@ limit 10;
 
 ```bash
 python trigger_delay.py --flight-id <flight-id> --delay-time <delay>
+```
+
+Check that the delay message was published:
+
+```bash
+rpk topic consume flight-statuses --brokers localhost:9092 |
+jq -Cc '.value | fromjson | 
+        select(.message_type == "flight_delay")'
 ```
 
 ## Services
@@ -220,3 +235,5 @@ Consumes `notifications` and prints those messages to the UI.
 ```bash
 cd ui && uvicorn main:app --reload
 ```
+
+Navigate to http://localhost:8000/static/ to see the notifications.
