@@ -203,6 +203,10 @@ jq -Cc '.value | fromjson |
 Consumes `flight-statuses` and publishes delayed customer details to `massaged-delays`
 
 ```bash
+pygmentize -O style=github-dark services/delays.py | less
+```
+
+```bash
 python services/delays.py
 ```
 
@@ -221,6 +225,10 @@ Or view the messages on the Redpanda console - http://localhost:8080/topics/mass
 **Go to slides** to explain how it works.
 
 Consumes `massaged-delays`, creates peronalised messages, and publishes those to `notifications`
+
+```bash
+pygmentize -O style=github-dark services/personaliser.py | less
+```
 
 It consumes one message at a time
 
