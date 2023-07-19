@@ -1,4 +1,4 @@
-# Flight Delay Recommendations
+= Flight Delay Recommendations
 
 This repository contains a demo showing how to build a real-time flight delay notification system.
 An architecture diagram of the system is shown below.
