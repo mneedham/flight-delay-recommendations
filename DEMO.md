@@ -21,7 +21,7 @@ rpk topic create \
   flight-statuses customer-actions massaged-delays notifications
 ```
 
-## Data generator
+## Data generator
 
 The data generator creates flights, has customers book them, and then checks in customers.
 
@@ -29,7 +29,7 @@ The data generator creates flights, has customers book them, and then checks in 
 python datagen.py
 ```
 
-## Check data in Redpanda
+## Check data in Redpanda
 
 Go to http://localhost:8080 or query from the command line:
 
@@ -160,7 +160,7 @@ group by message_type
 limit 10
 ```
 
-## Trigger Delay
+## Trigger Delay
 
 We're going to delay one of the flights.
 
@@ -198,7 +198,7 @@ jq -Cc '.value | fromjson |
 
 ## Services
 
-### Delays
+### Delays
 
 Consumes `flight-statuses` and publishes delayed customer details to `massaged-delays`
 
@@ -228,7 +228,7 @@ It consumes one message at a time
 python services/personaliser.py
 ```
 
-###  Dispatcher 
+### Dispatcher 
 
 Consumes `notifications` and prints those messages to the UI.
 
